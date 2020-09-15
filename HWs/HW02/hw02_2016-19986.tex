@@ -1,0 +1,148 @@
+\documentclass[a4paper,11pt]{scrartcl}
+\usepackage[margin=1in]{geometry} % decreases margins
+\setlength{\parskip}{0pt}
+\setkomafont{disposition}{\normalfont}
+\usepackage{enumitem}
+\setlist{noitemsep, topsep=0pt, partopsep=0pt, leftmargin=*}
+
+\usepackage{textcomp}
+\usepackage{kotex}
+\usepackage[mathrm=sym]{unicode-math}
+
+\usepackage[final]{hyperref} % adds hyper links inside the generated pdf file
+\hypersetup{
+  colorlinks=true,% false: boxed links; true: colored links
+  linkcolor=blue,        % color of internal links
+  citecolor=blue,   % color of links to bibliography
+  filecolor=magenta,     % color of file links
+  urlcolor=blue
+}
+\urlstyle{rm}
+
+\usepackage{listings}
+\usepackage{color}
+\definecolor{deepblue}{rgb}{0,0,0.7}
+\lstset{
+  showstringspaces=false,
+  otherkeywords={join},
+  basicstyle=\ttfamily\normalsize,
+  keywordstyle=\color{deepblue},
+  commentstyle=\color[gray]{0.6},
+  stringstyle=\color[RGB]{255,150,75},
+  language=python
+}
+
+\usepackage{fontspec}
+\setmonofont[Scale=0.95]{D2Coding}
+\setmainfont[AutoFakeSlant=0.2,BoldFont=SDMyeongjoNeoa-eSm]{SDMyeongjoNeoa-bLt}
+
+\addtokomafont{labelinglabel}{\bfseries}
+
+\title{\vspace{-0.5in}LangComp HW2}
+\author{\vspace{-15pt}2016-19986 정누리}
+\date{\vspace{-10pt}\today}
+
+%++++++++++++++++++++++++++++++++++++++++
+
+\begin{document}
+
+\maketitle
+
+\begin{labeling}{Q10}
+  \item[Q1]
+  operators: \lstinline{*}, \lstinline{-}, \lstinline{/}, \lstinline{+} \\
+  values: \lstinline{'hello'}, \lstinline{-88.8}, \lstinline{5}
+
+  \item[Q2]
+  \lstinline{spam} is a variable, \lstinline{'spam'} is a string.
+
+  \item[Q3]
+  \lstinline{int}, \lstinline{float}, \lstinline{str}
+
+  \item[Q4]
+  Expressions consist of \textit{values} and \textit{operators}, and they can always \textit{evaluate} down to a single value.
+
+  \item[Q5]
+  Expression은 값을 계산하는 데 쓰고, statement는 그 결과를 variable에 저장하는 데 쓴다.
+
+  \item[Q6]
+  \lstinline{20}
+
+  \item[Q7]
+  둘 모두 \lstinline{'spamspamspam'}으로 evaluate된다.
+
+  \item[Q8]
+  변수명은
+  \begin{enumerate}
+    \item 한 단어로 이루어져 있어야 하며(whitespace나 hyphen 불가),
+    \item 알파벳 또는 underscore(\lstinline{_})로 시작해야 하고,
+    \item 숫자로 시작할 수 없기 때문이다.
+  \end{enumerate}
+
+  \item[Q9]
+  각각 \lstinline{int()}, \lstinline{float()}, \lstinline{str()}이다.
+
+  \item[Q10]
+  \lstinline{str} type과 \lstinline{int} type의 연산은 정의되어 있지 않기 때문이다. 여러 가지로 고칠 수 있는데, 예를 들면 다음과 같은 방법이 있다.
+
+  \begin{lstlisting}
+    'I have eaten ' + '99' + ' burritos.'
+    'I have eaten %d burritos.' % 99
+    'I have eaten {} burritos.'.format(99)
+    f'I have eaten {99} burritos.'
+    ' 99 '.join('I have eaten', 'burritos.')
+    \end{lstlisting}
+
+\end{labeling}
+
+\begin{labeling}{Extra}
+  \item[Extra]
+  Official document says\footnote{\url{https://docs.python.org/3/library/functions.html\#len}}:
+  \begin{quotation}
+    \lstinline{len(s)}: Return the length (the number of items) of an object. The argument may be a sequence (such as a string, bytes, tuple, list, or range) or a collection (such as a dictionary, set, or frozen set).
+  \end{quotation}
+  \lstinline{round()} function에 대해서는 다음과 같은 서술을 하고 있다.\footnote{\url{https://docs.python.org/3/library/functions.html\#round}}
+  \begin{quotation}
+    \lstinline{round(number[, ndigits])}: Return \emph{number} rounded to \emph{ndigits} precision after the decimal point. If \emph{ndigits} is omitted or is \lstinline{None}, it returns the nearest integer to its input. \dots rounding is done toward the even choice \dots
+  \end{quotation}
+  이론적으로는 이대로 동작해야 하지만, 실제로는 floating point 연산의 오차로 인해 정확한 결과가 나오지 않을 수 있다. 공식 문서에서 제시한 예시는 \lstinline{2.675}로, 실제 python interpreter에서 확인해 보면 다음과 같은 결과가 나온다.
+  \begin{lstlisting}
+    >>> round(2.675, 2)
+    2.67
+  \end{lstlisting}
+  \lstinline{round()} 함수의 특성상 \lstinline{5}를 반올림할 경우만 오차가 생긴다. 현재 컴퓨터 환경에서의 machine epsilon\footnote{Upper bound on the relative error due to rounding in floating point arithmetic (\url{https://en.wikipedia.org/wiki/Machine_epsilon}).}은 다음 명령어로 확인할 수 있다.
+  \begin{lstlisting}
+    >>> import sys; sys.float_info
+    sys.float_info(max=1.7976931348623157e+308, max_exp=1024,
+    max_10_exp=308, min=2.2250738585072014e-308, min_exp=-1021,
+    min_10_exp=-307, dig=15, mant_dig=53,
+    epsilon=2.220446049250313e-16, radix=2, rounds=1)
+  \end{lstlisting}
+  따라서 현재 환경에서는 \lstinline{5}를 반올림하는 경우가 아니면 오차가 생기지 않는다는 것을 확인할 수 있다 (machine epsilon은 relative error이므로). 실제로 극한 상황인 매우 작거나 큰 수의 경우에도 \lstinline{5}가 아니면 정상적으로 결과를 얻을 수 있었다.
+  \begin{lstlisting}
+    >>> round(2.676e+307, -305)
+    2.68e+307
+    >>> round(2.676e-308, 310)
+    2.68e-308
+  \end{lstlisting}
+  하필 \lstinline{2.675}인 이유는 무엇일까? \lstinline{2.675}는 분수로 나타내면 \(\frac{107}{40}\)인데, 이를 이진 소수로 나타내면 다음과 같다.
+  \begin{displaymath}
+    2.675 = 2 + \frac{1}{2} + \frac{1}{8} + \frac{1}{32} + \frac{1}{64} + \cdots =
+    \mathrm{2.acccccc\cdots_{(16)}}
+  \end{displaymath}
+  마지막 표현에서 확인할 수 있듯이, 순환소수이므로 컴퓨터에서 처리하는 과정에서는 어딘가에서 끊기게 될 것이고, 따라서 이러한 문제가 발생하였다고 볼 수 있다. 비슷한 소수인 \lstinline{2.55}(\lstinline{==} \(\mathrm{2.8ccc}\cdots_{(16)}\))도 \lstinline{round()} 함수로 계산해 보면 동일한 결과가 나온다.
+  \begin{lstlisting}
+    >>> round(2.55, 1)
+    2.5
+  \end{lstlisting}
+  이때 \(\mathrm{0.0ccc}\cdots_{(16)}\) \lstinline{==} \(0.05\)이다. \\
+  \\
+  이러한 문제를 해결하기 위해, python은 자체적으로 \lstinline{decimal} 모듈과 \lstinline{fraction} 모듈을 제공하므로, 정밀한 수학 계산이 필요한 경우에는 \lstinline{float}만 이용하지 않고 해당 모듈들을 이용하여 더 정확한 결과를 얻을 수도 있다. 실제로 \lstinline{Decimal} 모듈을 이용하여 \lstinline{round} 계산을 한 결과는 다음과 같다.
+  \begin{lstlisting}
+    >>> from decimal import Decimal
+    >>> round(Decimal('2.675'), 2)
+    Decimal('2.68')
+  \end{lstlisting}
+\end{labeling}
+
+\end{document}

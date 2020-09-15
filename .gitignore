@@ -1,0 +1,6 @@
+.DS_Store
+*.pdf
+*.png
+강의록/
+latex_build/
+__pycache__/
