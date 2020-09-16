@@ -1,4 +1,5 @@
 \documentclass[a4paper,11pt]{scrartcl}
+\usepackage{mmap}
 \usepackage[margin=1in]{geometry} % decreases margins
 \usepackage{setspace}
 \setlength{\parskip}{0pt}
@@ -51,7 +52,7 @@
 \usepackage{bold-extra}
 \setmonofont[AutoFakeSlant=0.2,Scale=0.95]{D2Coding}
 \setsansfont[BoldFont=AppleSDGothicNeo-SemiBold]{Apple SD Gothic Neo}
-\setmainfont[AutoFakeSlant=0.2,BoldFont=SDMyeongjoNeoa-eSm]{SDMyeongjoNeoa-bLt}
+\setmainfont[AutoFakeSlant=0.2,BoldFont=SDMyeongjoNeoa-eSm,WordSpace={1.0,0.5,0.5},Kerning=On]{SDMyeongjoNeoa-bLt}
 
 \usepackage{kotex}
 
@@ -135,10 +136,11 @@ not ((5 > 4) or (3 == 5))           -> False
   Assignment operator assigns a value or an object reference to the left-hand operand\footnote{This is just a simple assignment if the left-hand operand is a simple variable, but for classes' and more complex objects' fields, or for mutable, subscriptable objects, the behavior might be different. For example, list element assignment will call \lstinline|__setitem__| special method.}, equal to operator calls the special method \lstinline{__eq__}\footnote{Operands are chosen based on types (\url{https://docs.python.org/3/reference/datamodel.html\#object.__eq__}).}. If no such implementation is defined, it falls back to the default behavior of python \lstinline{object.__eq__} (which is based on object identity\footnote{\url{https://docs.python.org/3/reference/expressions.html\#value-comparisons}}).
 
   \item[Q7]
-  \emph{Conditions} are special expressions that always evaluate down to a boolean value. A flow control statement will decide what to do based on the \emph{conditions}.
+  \emph{Conditions} are special expressions that always evaluate down to a boolean value. A \linebreak flow control statement will decide what to do based on the \emph{conditions}.
 
   \item[Q8]
-  Python determines block by whitespaces. Assuming that the whitespaces are all tabs or spaces, the three blocks are:
+  Python determines block by whitespaces. Assuming that the whitespaces are all tabs or all spaces, the three blocks are:
+
   \begin{lstlisting}
 if spam == 10:
     {first block}
@@ -176,10 +178,10 @@ for i in range(1, 11):
   \end{lstlisting}
   Second program:
   \begin{lstlisting}
-i = 1
-while i < 11:
-    print(i)
+i = 0
+while i < 10:
     i += 1
+    print(i)
   \end{lstlisting}
 
   \item[Q14]
@@ -192,22 +194,31 @@ spam.bacon()
 \begin{labeling}{Extra}
   \item[Extra]
   Official document says\footnote{\url{https://docs.python.org/3/library/functions.html\#round}}:
+
   \begin{quotation}
     \lstinline{round(number[, ndigits])}: Return \emph{number} rounded to \emph{ndigits} precision after the decimal point. If \emph{ndigits} is omitted or is \lstinline{None}, it returns the nearest integer to its input. \dots rounding is done toward the even choice \dots
   \end{quotation}
-  \lstinline{round()} function에 대한 실험은 지난 과제에서 이미 진행하였으므로 생략하도록 하겠다. \par
+
+  \lstinline{round()} function에 대한 실험은 지난 과제에서 이미 진행하였으므로 생략하도록 하겠다.
+
   이제 \lstinline{abs()} function에 대해 살펴보자\footnote{\url{https://docs.python.org/3/library/functions.html\#abs}}.
+
   \begin{quotation}
     Return the absolute value of a number. The argument may be an integer or a floating point number. If the argument is a complex number, its magnitude is returned. If \emph{x} defines \lstinline{__abs__()}, \lstinline{abs(x)} returns \lstinline{x.__abs__()}.
   \end{quotation}
-  \lstinline{abs(x)}는 내부적으로 \lstinline{__abs__} magic method를 호출하는 것을 확인할 수 있다. 따라서 built-in type에 대해서는 \lstinline{abs()}가 수학적으로 올바른 결과를 낼 것으로 기대할 수 있으나, custom class에 대해 사용했을 때 항상 옳은 결과를 낼 것이라 기대하기는 어렵다. \par
+
+  \lstinline{abs(x)}는 내부적으로 \lstinline{__abs__} magic method를 호출하는 것을 확인할 수 있다. 따라서 built-in type에 대해서는 \lstinline{abs()}가 수학적으로 올바른 결과를 낼 것으로 기대할 수 있으나, custom class에 대해 사용했을 때 항상 옳은 결과를 낼 것이라 기대하기는 어렵다.
+
   예를 들어, \lstinline{int} class를 상속받는 다음 \lstinline{wrong_int} class를 생각해 보자.
+
   \begin{lstlisting}
     class wrong_int(int):
         def __abs__(self):
             return self
   \end{lstlisting}
+
   이제 해당 class를 이용하여 만든 object에 \lstinline{abs()}를 취하면 일반적으로 기대되는 결과가 얻어지지 않는다.
+
   \begin{lstlisting}
     >> i = wrong_int(-10)
     >> i
@@ -215,7 +226,9 @@ spam.bacon()
     >> abs(i)
     -10
   \end{lstlisting}
+
   물론 다시 \lstinline{int}로 캐스팅하면 정상적인 결과를 얻는다.
+
   \begin{lstlisting}
     >> i = int(i)
     >> i
@@ -223,8 +236,10 @@ spam.bacon()
     >> abs(i)
     10
   \end{lstlisting}
-  이러한 현상은 모든 대상이 object로 취급되고 (Python 3), duck typing 언어인 만큼 많은 built-in function 및 operator가 object에 구현을 delegate하는 python의 특징으로도 볼 수 있겠다. 이러한 delegation은 function을 first-class object로 보며, parameter list에 대한 정보를 runtime에 얻는 파이썬의 특징에서 생기는 부작용인 function overloading 불가능을 해결하기 위한 방법이기도 하다. \par
-  반면 normal typing인 언어\footnote{Java 등이 대표적이다.}는 이러한 형태의 function은 만들기 어렵다. C++은 다소 특이\allowbreak하게도 duck typing 언어가 아님에도 python과 유사한 코드를 template을 이용하여 작성할 수 있는데, 이는 compile time에 컴파일러가 각각의 타입에 맞는 함수를 생성해 주기 때문이다. 일종의 편의기능에 가까운 셈인데, 따라서 python처럼 runtime에도 duck typing으로 동작하지는 않는다.
+
+  이러한 현상은 모든 대상이 object로 취급되고 (Python 3), duck typing 언어인 만큼 많은 built-in function 및 operator가 object에 구현을 delegate하는 python의 특징으로도 볼 수 있겠다. 이러한 delegation은 function을 first-class object로 보며, parameter list에 대한 정보를 runtime에 얻는 파이썬의 특징에서 생기는 부작용인 function overloading 불가능을 해결하기 위한 방법이기도 하다.
+
+  반면 normal typing인 언어\footnote{Java 등이 대표적이다.}는 이러한 형태의 function은 만들기 어렵다. Generic programing을 지원하는 static typed 언어 중, C++ 등의 일부 언어는 특이하게도 python과 유사한 코드를 duck typing 언어가 아님에도 작성할 수 있는데, 이는 compile time에 컴파일러가 각각의 타입에 맞는 함수를 생성해 주기 때문이다. 일종의 편의기능에 가까운 셈인데, 따라서 python처럼 runtime에도 duck typing으로 동작하지는 않는다.
 \end{labeling}
 
 \newpage
