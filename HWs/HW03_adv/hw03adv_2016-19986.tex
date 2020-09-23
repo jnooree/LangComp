@@ -1,0 +1,128 @@
+\documentclass[a4paper,11pt]{scrartcl}
+\usepackage[margin=1in]{geometry} % decreases margins
+\usepackage{setspace}
+\setlength{\parskip}{0pt}
+\onehalfspacing
+
+\usepackage[procnames]{listingsutf8}
+\usepackage[dvipsnames]{xcolor}
+
+\definecolor{stringcolor}{RGB}{233,125,44}
+
+\makeatletter
+\lstdefinestyle{mystyle}{
+  language=python,
+  showstringspaces=false,
+  otherkeywords={__eq__,__setitem__,__abs__,wrong_int},
+  basicstyle=%
+    \ttfamily
+    \lst@ifdisplaystyle\normalsize\fi,
+  numberstyle=\ttfamily\small\color{gray},
+  keywordstyle=\color{Blue},
+  commentstyle=\color[gray]{0.6},
+  stringstyle=\color{stringcolor},
+  procnamekeys={class},
+  procnamestyle=\color{Bittersweet},
+  emph={None,True,False},
+  emphstyle=\itshape\color[rgb]{0.7,0,0},
+  emph={[2]self},
+  emphstyle=[2]\itshape\color{Bittersweet},
+  numbers=left,
+  texcl=true
+}
+\makeatother
+
+\lstset{style=mystyle}
+\lstset{escapeinside={(*@}{@*)}}
+
+\usepackage{fontspec}
+\usepackage{bold-extra}
+\setmonofont[AutoFakeSlant=0.2,Scale=0.95]{D2Coding}
+\setsansfont[BoldFont=AppleSDGothicNeo-SemiBold]{Apple SD Gothic Neo}
+\setmainfont[AutoFakeSlant=0.2,BoldFont=SDMyeongjoNeoa-eSm,WordSpace={1.0,0.5,0.5},Kerning=On]{SDMyeongjoNeoa-bLt}
+
+\usepackage{kotex}
+
+\addtokomafont{labelinglabel}{\bfseries}
+\addtokomafont{title}{\bfseries}
+
+\setkomafont{disposition}{\normalfont}
+\setkomafont{section}{\LARGE\bfseries\sffamily}
+\setkomafont{subsection}{\Large\bfseries\sffamily}
+
+\renewcommand{\thesubsection}{\arabic{subsection}.}
+
+\title{\vspace{-0.5in}LangComp HW3 Advanced}
+\author{\vspace{-15pt}2016-19986 정누리}
+\date{\vspace{-5pt}\today}
+
+%++++++++++++++++++++++++++++++++++++++++
+
+\begin{document}
+
+\maketitle
+
+\section*{Code}
+\begin{lstlisting}
+import re
+
+days = "(*@\textcolor{stringcolor}{월화수목금토일}@*)"
+onlychar = re.compile(r"[a-z(*@\textcolor{stringcolor}{ㄱ}@*)-(*@\textcolor{stringcolor}{ㅎㅏ}@*)-(*@\textcolor{stringcolor}{ㅣ가}@*)-(*@\textcolor{stringcolor}{힣}@*)]+")
+
+if __name__ == "__main__":
+    # 1. 요일 계산 프로그램
+    today = days.index(input("(*@\textcolor{stringcolor}{오늘의 요일을 입력하세요}@*): "))
+    N = int(input("(*@\textcolor{stringcolor}{며칠 후의 요일을 계산할까요}@*)? "))
+    day = days[(today + N) % 7]
+    print(f"{N}(*@\textcolor{stringcolor}{일 후는}@*) {day}(*@\textcolor{stringcolor}{요일입니다}@*).")
+
+    # 2. 단어 빈도 계산 프로그램
+    sent = input("(*@\textcolor{stringcolor}{문장을 입력하세요}@*): ")
+
+    freq = dict()
+    for match in onlychar.finditer(sent.lower()):
+        word = match.group()
+        freq[word] = freq.get(word, 0) + 1
+
+    print(freq)
+
+\end{lstlisting}
+
+\newpage
+\section*{Test}
+\subsection{요일 계산 프로그램}
+
+\begin{labeling}{Case N}
+  \item[Case 1]
+  {\ttfamily
+    오늘의 요일을 입력하세요: 월 \\
+    며칠 후의 요일을 계산할까요? 1 \\
+    1일 후는 화요일입니다.
+  }
+
+  \item[Case 2]
+  {\ttfamily
+    오늘의 요일을 입력하세요: 화 \\
+    며칠 후의 요일을 계산할까요? 10 \\
+    10일 후는 금요일입니다.
+  }
+\end{labeling}
+
+\subsection{단어 빈도 계산 프로그램}
+
+\begin{labeling}{Case N}
+  \item[Case 1]
+  {\ttfamily
+    문장을 입력하세요: Bacon bacon spam, egg bacon!! \\
+    \{'bacon': 3, 'spam': 1, 'egg': 1\}
+  }
+
+  \item[Case 2]
+  {\ttfamily
+    문장을 입력하세요: 언컴 컴언? '언컴' SPAm Bacon EGg eGG! \\
+    \{'언컴': 2, '컴언': 1, 'spam': 1, 'bacon': 1, 'egg': 2\}
+  }
+
+\end{labeling}
+
+\end{document}

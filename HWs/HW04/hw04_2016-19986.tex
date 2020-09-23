@@ -1,0 +1,120 @@
+\documentclass[a4paper,11pt]{scrartcl}
+\usepackage{mmap}
+\usepackage[margin=1in]{geometry} % decreases margins
+\usepackage{setspace}
+\setlength{\parskip}{0pt}
+\onehalfspacing
+
+\usepackage{enumitem}
+\setlist{noitemsep, topsep=0pt, partopsep=0pt, leftmargin=*}
+
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage[mathrm=sym]{unicode-math}
+
+\usepackage[final]{hyperref} % adds hyper links inside the generated pdf file
+\hypersetup{
+  colorlinks=true,% false: boxed links; true: colored links
+  linkcolor=blue,        % color of internal links
+  citecolor=blue,   % color of links to bibliography
+  filecolor=magenta,     % color of file links
+  urlcolor=blue
+}
+\urlstyle{rm}
+
+\usepackage[procnames]{listings}
+\usepackage[dvipsnames]{xcolor}
+
+\makeatletter
+\lstdefinestyle{mystyle}{
+  language=python,
+  showstringspaces=false,
+  otherkeywords={__eq__,__setitem__,__abs__,wrong_int,catch},
+  basicstyle=%
+    \ttfamily
+    \lst@ifdisplaystyle\normalsize\fi,
+  keywordstyle=\color{Blue},
+  commentstyle=\color[gray]{0.6},
+  stringstyle=\color[RGB]{233,125,44},
+  procnamekeys={class},
+  procnamestyle=\color{Bittersweet},
+  emph={None,True,False},
+  emphstyle=\itshape\color[rgb]{0.7,0,0},
+  emph={[2]self},
+  emphstyle=[2]\itshape\color{Bittersweet}
+}
+\makeatother
+
+\lstset{style=mystyle}
+\lstset{escapeinside={(*@}{@*)}}
+
+\usepackage{fontspec}
+\usepackage{bold-extra}
+\setmonofont[AutoFakeSlant=0.2,Scale=0.95]{D2Coding}
+\setsansfont[BoldFont=AppleSDGothicNeo-SemiBold]{Apple SD Gothic Neo}
+\setmainfont[AutoFakeSlant=0.2,BoldFont=SDMyeongjoNeoa-eSm,WordSpace={1.0,0.5,0.5},Kerning=On]{SDMyeongjoNeoa-bLt}
+
+\usepackage{kotex}
+
+\addtokomafont{labelinglabel}{\bfseries}
+\addtokomafont{title}{\bfseries}
+
+\setkomafont{disposition}{\normalfont}
+\setkomafont{section}{\LARGE\bfseries\sffamily}
+\setkomafont{subsection}{\Large\mdseries\sffamily}
+
+\title{\vspace{-0.5in}LangComp HW4}
+\author{\vspace{-15pt}2016-19986 정누리}
+\date{\vspace{-5pt}\today}
+
+%++++++++++++++++++++++++++++++++++++++++
+
+\begin{document}
+
+\maketitle
+
+\begin{labeling}{Q10}
+  \item[Q1]
+  여기저기 코드를 복사할 필요가 없어지고, 디버깅하기 편하다. 또 프로그램이 짧아지며, 읽기 쉬워지고 수정하기도 쉬워진다.
+
+  \item[Q2]
+  When it gets called.
+
+  \item[Q3]
+  \lstinline{def} statement.
+
+  \item[Q4]
+  A function is an object declared by a \lstinline{def} statement. A function call is the evaluation of associated code block with the function, with the given parameters, to the return value.
+
+  \item[Q5]
+  One global scope, many local scopes.
+
+  \item[Q6]
+  They are all destroyed.
+
+  \item[Q7]
+  A return value is the value that a function call evaluates to. The return value is indeed a value, and an expression consists of values and operators, so it could be used with expression.
+
+  \item[Q8]
+  \lstinline{None}.
+
+  \item[Q9]
+  With a \lstinline{global} statement.
+
+  \item[Q10]
+  \lstinline{NoneType}, and it is the only object of type \lstinline{NoneType}.
+
+  \item[Q11]
+  It imports a python module and makes the module available in the scope.
+
+  \item[Q12]
+  \lstinline{spam.bacon()}.
+
+  \item[Q13]
+  With the \lstinline{try}/\lstinline{catch} statement.
+
+  \item[Q14]
+  The code might raise an exception goes in the \lstinline{try} clause. The \lstinline{except} clause will be excecuted once the exception, specified after the \lstinline{except} keyword, was actually raised inside the \lstinline{try} clause.
+
+\end{labeling}
+\end{document}
