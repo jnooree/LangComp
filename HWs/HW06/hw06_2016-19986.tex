@@ -1,0 +1,110 @@
+\documentclass[a4paper,11pt]{scrartcl}
+\usepackage[margin=1in]{geometry} % decreases margins
+\usepackage{setspace}
+\setlength{\parskip}{0pt}
+\onehalfspacing
+
+\usepackage{enumitem}
+\setlist{noitemsep, topsep=0pt, partopsep=0pt, leftmargin=*}
+
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage[mathrm=sym]{unicode-math}
+
+\usepackage[final]{hyperref} % adds hyper links inside the generated pdf file
+\hypersetup{
+  colorlinks=true,% false: boxed links; true: colored links
+  linkcolor=blue,        % color of internal links
+  citecolor=blue,   % color of links to bibliography
+  filecolor=magenta,     % color of file links
+  urlcolor=blue
+}
+\urlstyle{rm}
+
+\usepackage[procnames]{listings}
+\usepackage[dvipsnames]{xcolor}
+
+\makeatletter
+\lstdefinestyle{mystyle}{
+  showstringspaces=false,
+  basicstyle=%
+    \ttfamily
+    \lst@ifdisplaystyle\normalsize\fi,
+  keywordstyle=\color{Blue},
+  commentstyle=\color[gray]{0.6},
+  stringstyle=\color[RGB]{233,125,44},
+  procnamekeys={class},
+  procnamestyle=\color{Bittersweet},
+  emph={None,True,False},
+  emphstyle=\itshape\color[rgb]{0.7,0,0},
+  emph={[2]self},
+  emphstyle=[2]\itshape\color{Bittersweet}
+}
+\makeatother
+
+\lstset{style=mystyle}
+\lstset{escapeinside={(*@}{@*)}}
+
+\usepackage{fontspec}
+\usepackage{bold-extra}
+\setmonofont[AutoFakeSlant=0.2,Scale=0.95]{D2Coding}
+\setsansfont[BoldFont=AppleSDGothicNeo-SemiBold]{Apple SD Gothic Neo}
+\setmainfont[AutoFakeSlant=0.2,BoldFont=SDMyeongjoNeoa-eSm,WordSpace={1.0,0.5,0.5},Kerning=On]{SDMyeongjoNeoa-bLt}
+
+\usepackage{kotex}
+
+\addtokomafont{labelinglabel}{\bfseries}
+\addtokomafont{title}{\bfseries}
+
+\setkomafont{disposition}{\normalfont}
+\setkomafont{section}{\LARGE\bfseries\sffamily}
+\setkomafont{subsection}{\Large\mdseries\sffamily}
+
+\title{\vspace{-0.5in}LangComp HW6}
+\author{\vspace{-15pt}2016-19986 정누리}
+\date{\vspace{-5pt}\today}
+
+%++++++++++++++++++++++++++++++++++++++++
+
+\begin{document}
+
+\maketitle
+
+\noindent 2.1번은 zero-width match를 허용하는지 여부에 따라 약간 달라지는데, zero-width match를 허용하지 않는다면 다음과 같다.
+
+\begin{labeling}{2.2.4}
+  \item[2.1.2] \texttt{/[a-zA-Z]+/}
+  \item[2.1.2] \texttt{/[a-z]*b/}
+  \item[2.1.3] 이 경우에는 \texttt{a} 한 문자만 존재하는 경우는 규칙에 맞지 않아 불가능하므로 b만 한 개 이상 존재하면 충분하다. 따라서 다음과 같다.
+
+  \texttt{/(?:ba(?=b))*b+/}
+\end{labeling}
+
+\bigskip
+
+\begin{labeling}{2.2.4}
+  \item[2.2.1] 영문 알파벳이 아닌 나머지를 모두 word separator로 보면 다음과 같다.
+
+  \lstinline{/([a-zA-Z]+)[^a-zA-Z]+\1/}
+
+  \item[2.2.2] \lstinline{/^\d+.*\b[a-zA-Z]+$/}
+  \item[2.2.3] \lstinline{/(?=.*\bgrotto\b)(?=.*\braven\b).*/}
+  \item[2.2.4] 크게 다음 세 가지 경우로 나눌 수 있다.
+
+    \begin{enumerate}[label=\theenumi)]
+      \item 느낌표(\lstinline{!})나 물음표(\lstinline{?})로 끝나는 경우
+      \item 마침표(\lstinline{.}), 느낌표 또는 물음표 뒤에 작은따옴표(\lstinline{'})나 큰따옴표(\lstinline{"})가 위치하는 경우
+      \item 그리고 마침표로 끝나며, 바로 앞에 위치하는 단어가 \emph{abbreviation}이 아닌 경우
+    \end{enumerate}
+
+    특히 마지막이 상당히 까다로운데, 영어에 존재하는 모든 abbreviation을 포함하는 것은 불가능하므로 완벽히 거를 수는 없다. 다만 일반적으로 많이 쓰이는 줄임말을 negative lookbehind를 이용하여 작성하면 다음과 같다.
+
+    \begin{lstlisting}
+/(?:^|[!?]\s+|[.!?]['\"]\s+|
+    (?<!Mr|Ms|Mrs|Dr|St|[Nn]o|[Vv]s|[Vv]\.s|
+        [Ee]g|[Ee]\.g|[Pp][Ss]|[Pp]\.[Ss]|etc)\.\s+)
+ ([a-zA-Z]+)/
+    \end{lstlisting}
+\end{labeling}
+
+\end{document}
