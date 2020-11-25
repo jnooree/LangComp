@@ -1,0 +1,233 @@
+\documentclass[a4paper,11pt]{scrartcl}
+\usepackage[margin=1in]{geometry} % decreases margins
+\usepackage{setspace}
+\setlength{\parskip}{0pt}
+\onehalfspacing
+
+\usepackage{enumitem}
+\setlist{noitemsep, topsep=0pt, partopsep=0pt, leftmargin=*}
+
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage[mathrm=sym]{unicode-math}
+
+\usepackage[final]{hyperref} % adds hyper links inside the generated pdf file
+\hypersetup{
+  colorlinks=true,% false: boxed links; true: colored links
+  linkcolor=blue,        % color of internal links
+  citecolor=blue,   % color of links to bibliography
+  filecolor=magenta,     % color of file links
+  urlcolor=blue
+}
+\urlstyle{rm}
+
+\usepackage[procnames]{listings}
+\usepackage[dvipsnames]{xcolor}
+
+\definecolor{stringcolor}{RGB}{233,125,44}
+
+\makeatletter
+\lstdefinestyle{mystyle}{
+  language=python,
+  showstringspaces=false,
+  otherkeywords={__eq__,__setitem__,__abs__},
+  basicstyle=%
+    \ttfamily
+    \lst@ifdisplaystyle\normalsize\fi,
+    numberstyle=\ttfamily\small\color{gray},
+    keywordstyle=\color{Blue},
+    commentstyle=\color[gray]{0.6},
+    stringstyle=\color{stringcolor},
+    procnamekeys={class},
+    procnamestyle=\color{Bittersweet},
+    emph={None,True,False},
+    emphstyle=\itshape\color[rgb]{0.7,0,0},
+    emph={[2]self},
+    emphstyle=[2]\itshape\color{Bittersweet},
+    % numbers=left,
+    texcl=true
+}
+\makeatother
+
+\lstset{style=mystyle}
+\lstset{escapeinside={(*@}{@*)}}
+
+\usepackage{fontspec}
+\usepackage{bold-extra}
+\setmonofont[AutoFakeSlant=0.2,Scale=0.95]{D2Coding}
+\setsansfont[BoldFont=AppleSDGothicNeo-SemiBold]{Apple SD Gothic Neo}
+\setmainfont[AutoFakeSlant=0.2,BoldFont=SDMyeongjoNeoa-eSm,WordSpace={1.0,0.5,0.5},Kerning=On]{SDMyeongjoNeoa-bLt}
+
+\usepackage{longfbox}
+\usepackage{kotex}
+
+\addtokomafont{labelinglabel}{\bfseries}
+\addtokomafont{title}{\bfseries}
+
+\setkomafont{disposition}{\normalfont}
+\setkomafont{section}{\LARGE\bfseries\sffamily}
+\setkomafont{subsection}{\Large\bfseries\sffamily}
+\setkomafont{subsubsection}{\large\sffamily}
+
+\usepackage{indentfirst}
+\usepackage{graphicx}
+
+\newcommand{\kostr}[1]{\textcolor{stringcolor}{#1}}
+
+\title{\vspace{-0.5in}LangComp HW10}
+\author{\vspace{-15pt}2016-19986 정누리}
+\date{\vspace{-5pt}\today}
+
+%++++++++++++++++++++++++++++++++++++++++
+
+\begin{document}
+
+\maketitle
+
+\setcounter{section}{1}
+\setcounter{subsection}{-1}
+\subsection{코퍼스 준비}
+\subsubsection{파일 읽기}
+간단히 한 줄로 해결할 수 있다.
+\begin{lstlisting}
+  with open("poems.txt") as f:
+      data = [
+          (int(pid), int(stmt), list(doc))
+          for pid, stmt, *_, doc in (line.split("\t")
+                                     for line in f.read().splitlines())
+      ]
+\end{lstlisting}
+
+\subsection{훈련}
+\subsubsection{로그사전확률}
+아래와 같이 계산하였다.
+\begin{lstlisting}
+  Nc = Counter(stmt for _, stmt, *_ in train)
+  Ndoc = len(train)
+  logprior = {stmt: log(cnt / Ndoc) for stmt, cnt in Nc.items()}
+\end{lstlisting}
+
+\subsubsection{로그가능도}
+어휘 목록은 다음과 같이 만들 수 있다. 이 방법의 유일한 단점은 단어를 등장 순으로 \\
+\lstinline{vocabulary}에 저장하고 싶다면 추가적인 정렬이 필요하다는 것이다.
+\begin{lstlisting}
+  vocabulary = list(set(ch for *_, doc in train for ch in doc))
+\end{lstlisting}
+
+범주별 문서는 수업 시간에 했던 것과 동일하게 만들었다.
+\begin{lstlisting}
+  bigdoc = defaultdict(list)
+  for _, stmt, doc in train:
+      bigdoc[stmt].extend(doc)
+\end{lstlisting}
+
+\pagebreak
+범주별 단어 빈도표는 다음과 같이 만들 수 있다. 이때 문제에서 제시한 것과 같이 add-1 smoothing을 진행하였다.
+\begin{lstlisting}
+  counts = {stmt: Counter(tokens) for stmt, tokens in bigdoc.items()}
+  for stmt in counts:
+      counts[stmt].update(vocabulary)
+\end{lstlisting}
+
+마지막으로, 로그가능도는 다음과 같이 구할 수 있다. 이때 공통으로 사용되는 부분인 전체 단어의 개수를 먼저 구하여 로그를 취해 두었다(\lstinline{logsum}).
+\begin{lstlisting}
+  logsum = {stmt: log(len(doc) + len(vocabulary))
+            for stmt, doc in bigdoc.items()}
+  loglikelihood = {ch: {stmt: log(cnt[ch]) - logsum[stmt]
+                        for stmt, cnt in counts.items()}
+                   for ch in vocabulary}
+\end{lstlisting}
+
+\lstinline{pickle} 파일로 저장하는 코드는 다음과 같다.
+\begin{lstlisting}
+  with open("loglike.pkl", "wb") as fb:
+      pickle.dump(loglikelihood, fb)
+\end{lstlisting}
+
+또한 근심 수 자와 빼어날 수 자의 로그가능도는 각각 다음과 같다. 예상과 같이, 근심 수 자는 부정적인 글에서 더 높은 등장 확률을, 빼어날 수 자는 긍정적인 글에서 더 높은 등장 확률을 보인다.
+\par\medskip
+\begin{longfbox}[margin-left=1em]
+  \ttfamily
+  \noindent \{1: -7.683403681053825, 0: -5.685778229301401\} \\
+  \{1: -6.99025650049388, 0: -8.518991573357617\}
+\end{longfbox}
+
+\subsection{실험}
+\subsubsection{결과}
+우선 \lstinline{dict} 자료형에 사용하기 편하도록 \lstinline{argmax} 함수를 정의한다. \lstinline{numpy}의 \lstinline{argmax} 함수를 사용하기 위해서는 \lstinline{numpy.ndarray}로 바꿔주어야 하므로 비효율적이다.
+\begin{lstlisting}
+  def argmax(dictionary):
+      max_key = next(iter(dictionary.keys()))
+      for k, v in dictionary.items():
+          if v > dictionary[max_key]:
+              max_key = k
+      return max_key
+\end{lstlisting}
+
+\pagebreak
+이제 Naive Bayes 모델의 \(\ln{} P(c|testdoc)\)을 계산하자. Membership test는 \lstinline{set} 자료형이 \lstinline{list} 자료형보다 훨씬 빠르므로(\(\mathcal{O}(\log{}n)\) vs \(\mathcal{O}(n)\)) 계산에 앞서 typecasting을 하였다.
+\begin{lstlisting}
+  vocabset = set(vocabulary)
+  logp_nb = defaultdict(lambda:
+                        {stmt: lp for stmt, lp in logprior.items()})
+  for *meta, doc in test:
+      for ch in doc:
+          if ch in vocabset:
+              for stmt in counts:
+                  logp_nb[tuple(meta)][stmt] += loglikelihood[ch][stmt]
+\end{lstlisting}
+
+마지막으로 결과는 앞서 정의한 \lstinline{argmax} 함수를 이용하여 다음과 같이 구할 수 있다.
+\begin{lstlisting}
+  results = {pid: (ans, argmax(res))
+             for (pid, ans), res in logp_bayes.items()}
+\end{lstlisting}
+
+전체 결과는 다음과 같다.
+
+\par\medskip
+\begin{longfbox}[margin-left=1em]
+  \ttfamily
+  \noindent \{111: (1, 1), 144: (0, 0), 70: (1, 1), 132: (0, 0), 14: (1, 0), 135: (0, 0), \\
+  \phantom{\{}126: (0, 0), 19: (0, 0), 92: (0, 0), 138: (0, 0), 62: (0, 0), 90: (1, 1), \\
+  \phantom{\{}82: (1, 0), 118: (1, 1), 76: (1, 1), 17: (1, 0)\}
+\end{longfbox}
+
+\subsection{평가}
+\subsubsection{정확도}
+계산은 다음과 같이 할 수 있으며, 그 값은 \lstinline{0.8125}이다.
+\begin{lstlisting}
+  accuracy = sum(v[0] == v[1] for v in results.values()) / len(results)
+\end{lstlisting}
+
+\subsubsection{정밀도 및 재현율}
+각각 다음과 같이 구할 수 있다.
+
+\pagebreak
+\begin{lstlisting}
+  precision = dict()
+  recall = dict()
+  for stmt in logprior:
+      all_eq = ans_eq = res_eq = 0
+
+      for ans, res in results.values():
+          if ans == stmt:
+              ans_eq += 1
+              if ans == res:
+                  all_eq += 1
+          if res == stmt:
+              res_eq += 1
+
+      precision[stmt] = all_eq / res_eq
+      recall[stmt] = all_eq / ans_eq
+\end{lstlisting}
+
+또한 그 결과는 정밀도와 재현율이 각각 다음과 같다.
+\par\medskip
+\begin{longfbox}[margin-left=1em]
+  \ttfamily
+  \noindent \{1: 1.0, 0: 0.7272727272727273\} \\
+  \{1: 0.625, 0: 1.0\}
+\end{longfbox}
+
+\end{document}

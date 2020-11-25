@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/Users/jnooree/anaconda3/envs/langcomp/bin/python"
+    "python.pythonPath": "/Users/jnooree/anaconda3/envs/langcomp/bin/python",
+    "jupyter.jupyterServerType": "local"
 }
