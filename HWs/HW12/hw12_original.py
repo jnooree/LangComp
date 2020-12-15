@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import os, sys, re
-from functools import partial
 import nltk, numpy as np, pandas as pd
 import matplotlib.pyplot as plt, seaborn as sns
 
@@ -10,26 +9,29 @@ from sklearn import metrics
 from textstat import textstat
 
 from nltk.stem.porter import PorterStemmer
-from sklearn.linear_model import LogisticRegression
+from nltk.stem.wordnet import WordNetLemmatizer
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.feature_selection import SelectFromModel
 from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
-from gensim.models import Word2Vec, FastText
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer as VS
 
 stemmer = PorterStemmer()
 sentiment_analyzer = VS()
 
 space_pattern = re.compile(r"\s+")
-url_pattern = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|"
+url_pattern = re.compile(r"https?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|"
                          r"[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
-mention_pattern = re.compile(r"@[\w\-]+")
-hashtag_pattern = re.compile(r"#([\w\-]+)")
-emoji_pattern = re.compile(r'&#([0-9A-Fa-f]+);')
+mention_pattern = re.compile(r"@[\w\-_]+")
+hashtag_pattern = re.compile(r"#([\w\-_]+)")
+emoji_pattern = re.compile(r'(&#\d+?;)')
+# number_pattern = re.compile(r'\d+')
+word_split_pattern = re.compile(r"_|(?<=[A-Z])(?=[A-Z][a-z])|"
+                               r"(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])")
 
-word_pattern = re.compile("[a-z0-9_]+")
-word_pattern_puncts = re.compile("[a-z.,!?0-9_]+")
+word_pattern = re.compile(r"(&#\d+?;|[a-zA-Z]+)")
+word_pattern_puncts = re.compile(r"(&#\d+?;|[a-zA-Z,.!?]+)")
 
 
 def preprocess(text_string, url_repl="", mention_repl="",
@@ -44,24 +46,27 @@ def preprocess(text_string, url_repl="", mention_repl="",
     This allows us to get standardized counts of urls and mentions
     Without caring about specific people mentioned
     """
-    parsed_text = space_pattern.sub(" ", text_string)
-    parsed_text = url_pattern.sub(url_repl, parsed_text)
+    parsed_text = url_pattern.sub(url_repl, text_string)
     parsed_text = mention_pattern.sub(mention_repl, parsed_text)
     parsed_text = hashtag_pattern.sub(hashtag_repl, parsed_text)
     parsed_text = emoji_pattern.sub(emoji_repl, parsed_text)
+    # parsed_text = number_pattern.sub("", parsed_text)
+    parsed_text = word_split_pattern.sub(" ", parsed_text)
+    parsed_text = space_pattern.sub(" ", parsed_text)
 
     return parsed_text
 
 def tokenize(tweet):
     """Removes punctuation & excess whitespace, sets to lowercase,
     and stems tweets. Returns a list of stemmed tokens."""
-    tokens = [stemmer.stem(t)
-              for t in word_pattern.findall(tweet.lower())]
+    tokens = [
+        stemmer.stem(t) for t in word_pattern.findall(tweet)
+    ]
     return tokens
 
 def basic_tokenize(tweet):
     """Same as tokenize but without the stemming"""
-    return word_pattern_puncts.findall(tweet.lower())
+    return word_pattern_puncts.findall(tweet)
 
 def count_twitter_objs(text_string):
     """
@@ -126,7 +131,7 @@ def get_feature_array(tweets):
     return np.array(feats)
 
 def embed_tfidf(tweets, ngram_range=(1, 3), norm=None,
-                decode_error="replace", min_df=5, max_df=0.75, **kwargs):
+                decode_error="replace", min_df=7, max_df=0.75, **kwargs):
     vectorizer = TfidfVectorizer(
         ngram_range=ngram_range,
         norm=norm,
@@ -137,10 +142,12 @@ def embed_tfidf(tweets, ngram_range=(1, 3), norm=None,
     )
 
     #Construct tfidf matrix and get relevant scores
-    # vocab = {v: i for i, v in enumerate(vectorizer.get_feature_names())}
-    return vectorizer.fit_transform(tweets).toarray()
+    matrix = vectorizer.fit_transform(tweets).toarray()
+    vocab = {v: i for i, v in enumerate(vectorizer.get_feature_names())}
+    return matrix, vocab
 
-def main(embedby=embed_tfidf, max_features=(10000, 5000), nsplits=5):
+
+def main(embedby=embed_tfidf, nsplits=5, max_features=(10000, 5000)):
     df = pd.read_csv("train.txt", "\t", header=0, names=["class", "tweet"])
     print(df.describe())
     print(df.columns)
@@ -150,13 +157,13 @@ def main(embedby=embed_tfidf, max_features=(10000, 5000), nsplits=5):
 
     tweets = df.tweet
     stopwords = nltk.corpus.stopwords.words("english")
-    other_exclusions = ["#ff", "ff", "rt"]
+    other_exclusions = ["#ff", "ff", "rt", "RT"]
     stopwords.extend(other_exclusions)
 
     # np.ndarray of shape(len(tweets), embedding_dimension)
-    matrix = embedby(
+    matrix, vocab = embedby(
         tweets,
-        tokenizer=basic_tokenize,
+        tokenizer=tokenize,
         preprocessor=preprocess,
         stop_words=stopwords,
         use_idf=True,
@@ -164,16 +171,6 @@ def main(embedby=embed_tfidf, max_features=(10000, 5000), nsplits=5):
         lowercase=False,
         max_features=max_features[0]
     )
-    # matrix = embedby(
-    #     tweets,
-    #     preprocessor=preprocess,
-    #     use_idf=True,
-    #     smooth_idf=False,
-    #     analyzer="char",
-    #     lowercase=False,
-    #     ngram_range=(2, 20),
-    #     max_features=max_features[0]
-    # )
 
     #Get POS tags for tweets and save as a string
     tweet_tags = []
@@ -185,7 +182,7 @@ def main(embedby=embed_tfidf, max_features=(10000, 5000), nsplits=5):
         tweet_tags.append(tag_str)
 
     # np.ndarray of shape(len(tweets), embedding_dimension)
-    pos_matrix = embedby(
+    pos_matrix, pos_vocab = embedby(
         pd.Series(tweet_tags),
         tokenizer=None,
         lowercase=False,
@@ -196,26 +193,26 @@ def main(embedby=embed_tfidf, max_features=(10000, 5000), nsplits=5):
         max_features=max_features[1]
     )
 
-    # other_features_names = ["FKRA", "FRE", "num_syllables", "avg_syl_per_word", "num_chars",
-    #                         "num_chars_total", "num_terms", "num_words", "num_unique_words",
-    #                         "vader neg", "vader pos", "vader neu", "vader compound",
-    #                         "num_hashtags", "num_mentions", "num_urls", "is_retweet"]
+    other_features_names = ["FKRA", "FRE", "num_syllables", "avg_syl_per_word", "num_chars",
+                            "num_chars_total", "num_terms", "num_words", "num_unique_words",
+                            "vader neg", "vader pos", "vader neu", "vader compound", "num_urls",
+                            "num_mentions", "num_hashtags", "num_emojis", "is_retweet"]
     feats = get_feature_array(tweets)
 
     #Now join them all up
     M = np.concatenate([matrix, pos_matrix, feats], axis=1)
     print(M.shape)
 
-    #Finally get a list of variable names
-    # variables = [None] * len(vocab)
-    # for k, v in vocab.items():
-    #     variables[v] = k
+    # Finally get a list of variable names
+    variables = [None] * len(vocab)
+    for k, v in vocab.items():
+        variables[v] = k
 
-    # pos_variables = [None] * len(pos_vocab)
-    # for k, v in pos_vocab.items():
-    #     pos_variables[v] = k
+    pos_variables = [None] * len(pos_vocab)
+    for k, v in pos_vocab.items():
+        pos_variables[v] = k
 
-    # feature_names = variables + pos_variables + other_features_names
+    feature_names = pd.Series(variables + pos_variables + other_features_names)
 
     X = pd.DataFrame(M)
     y = df["class"].astype(int)
@@ -223,20 +220,27 @@ def main(embedby=embed_tfidf, max_features=(10000, 5000), nsplits=5):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
     pipe = Pipeline(
         [("select", SelectFromModel(
-            LogisticRegression(class_weight="balanced", penalty="l1", C=0.01,
-                               solver="liblinear"),
-            threshold="median")),
+            SGDClassifier(class_weight="balanced", penalty="l1", #alpha=0.1,
+                          #C=0.01, solver="liblinear",max_iter=200,
+                          early_stopping=True, n_jobs=-1),
+            threshold=1e-5)),
          ("model", LogisticRegression(class_weight="balanced", penalty="l2",
-                                      solver="liblinear"))]
+                                      solver="liblinear", max_iter=200, random_state=42))]
+        #   SGDClassifier(loss="log", class_weight="balanced", penalty="l2",
+        #                          # solver="liblinear", max_iter=200,
+        #                          early_stopping=True, n_jobs=-1))]
     )
     grid_search = GridSearchCV(
-        pipe,
-        {},
-        n_jobs=min(nsplits, os.cpu_count()),
-        cv=StratifiedKFold(n_splits=nsplits, random_state=42).split(X_train, y_train),
+        pipe, {}, n_jobs=-1,
+        cv=StratifiedKFold(
+            n_splits=nsplits, shuffle=True, random_state=42).split(
+                X_train, y_train),
         verbose=2
     )
     model = grid_search.fit(X_train, y_train)
+    feature_names[
+        model.best_estimator_["select"].get_support()
+    ].to_csv("selected_features.csv")
 
     y_preds = model.predict(X_test)
     report = metrics.classification_report(y_test, y_preds)
@@ -263,9 +267,10 @@ def main(embedby=embed_tfidf, max_features=(10000, 5000), nsplits=5):
     plt.ylabel(r"\textbf{True categories}", fontsize=14)
     plt.xlabel(r"\textbf{Predicted categories}", fontsize=14)
     plt.tick_params(labelsize=12)
-    plt.show()
+    # plt.show()
 
     fig.savefig("confusion_matrix.png", dpi=150)
+
 
     # y.hist()
     # plt.show()
@@ -274,7 +279,7 @@ def main(embedby=embed_tfidf, max_features=(10000, 5000), nsplits=5):
 
 
 if __name__ == "__main__":
-    main(embed_tfidf, nsplits=int(sys.argv[-1]))
+    main(embed_tfidf)
 
 #### UNUSED ####
 
